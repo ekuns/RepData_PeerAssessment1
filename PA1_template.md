@@ -1,4 +1,9 @@
-# Reproducible Research: Peer Assessment 1
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+  html_document:
+    keep_md: true
+---
 
 <!-- 
   Note:  For consistency, don't use "Knit HTML".  Instead, in the R Console,
@@ -52,7 +57,7 @@ dailyMedian <- median(dailySum$steps)
 hist(dailySum$steps, breaks=10, xlab="Steps", main="Total steps taken per day")
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-2-1.png) 
+![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2-1.png) 
 
 ```r
 # Print the mean and median values (rounded to one decimal place)
@@ -92,7 +97,7 @@ p <- xyplot(steps ~ interval, data=intervalMeans, type="l",
 print(p)
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
+![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3-1.png) 
 
 ```r
 print(paste("5-minute interval with the most average steps: ", 
@@ -146,7 +151,7 @@ hist(newDailySum$steps, breaks=10, xlab="Steps",
      main="Total steps taken per day (corrected)")
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-4-1.png) 
+![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4-1.png) 
 
 ```r
 # Print the corrected mean and median values (rounded to one decimal place)
@@ -202,7 +207,7 @@ p <- xyplot(steps ~ interval | levels(dayType), data=intervalMeans, type="l",
 print(p)
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-5-1.png) 
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png) 
 
 <!-- Clean temporary variables from the environment -->
 
