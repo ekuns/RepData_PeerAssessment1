@@ -1,9 +1,4 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
 
 <!-- 
   Note:  For consistency, don't use "Knit HTML".  Instead, in the R Console,
@@ -16,14 +11,16 @@ output:
 2. Show any code that is needed to process/transform the data (if necessary)
    into a format suitable for your analysis
 
-```{r libraries, results="hide", message=FALSE, warning=FALSE}
+
+```r
 # The assignment said, "feel free to use any plotting system in R", I kept it
 # simple and stuck with 1) base graphics for histograms, and 2) lattice graphics
 # for panel plots.
 library(lattice)
 library(dplyr)
 ```
-```{r}
+
+```r
 # Unzip the data into a "data" folder which GIT will ignore (see the file .gitignore)
 # We specify the column classes in advance, and then convert the interval from
 # an integer to a human-readable factor.
@@ -43,7 +40,8 @@ For this part of the assignment, you can ignore the missing values in the datase
 
 3. Calculate and report the mean and median of the total number of steps taken per day
 
-```{r, fig.height=5}
+
+```r
 # Calculate daily sum, then the mean and median of the sums (so we can compare, later)
 dailySum <- activity %>% group_by(date) %>%
             summarise_each(funs(sum(., na.rm = TRUE)), steps)
@@ -52,10 +50,25 @@ dailyMedian <- median(dailySum$steps)
 
 # Histogram of total number of steps taken per day
 hist(dailySum$steps, breaks=10, xlab="Steps", main="Total steps taken per day")
+```
 
+![](PA1_template_files/figure-html/unnamed-chunk-2-1.png) 
+
+```r
 # Print the mean and median values (rounded to one decimal place)
 print(paste("Mean of daily sum:", round(dailyMean, 1)))
+```
+
+```
+## [1] "Mean of daily sum: 9354.2"
+```
+
+```r
 print(paste("Median of daily sum:", round(dailyMedian, 1)))
+```
+
+```
+## [1] "Median of daily sum: 10395"
 ```
 
 ## What is the average daily activity pattern?
@@ -64,7 +77,8 @@ print(paste("Median of daily sum:", round(dailyMedian, 1)))
 
 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
-```{r, fig.height=5}
+
+```r
 intervalMeans <- activity %>% group_by(interval) %>%
                  summarise_each(funs(mean(., na.rm = TRUE)), steps)
 maxEntryIndex <- which.max(intervalMeans$steps)
@@ -76,11 +90,19 @@ p <- xyplot(steps ~ interval, data=intervalMeans, type="l",
             xlab="5-minute Interval", ylab="Average Number of steps",
             scales=list(x=list(at=xTickAt,labels=xLabels), rot=90))
 print(p)
+```
 
+![](PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
+
+```r
 print(paste("5-minute interval with the most average steps: ", 
             intervalMeans$interval[maxEntryIndex], " with ",
             round(intervalMeans$steps[maxEntryIndex], 1), " steps",
             sep=""))
+```
+
+```
+## [1] "5-minute interval with the most average steps: 08:35 with 206.2 steps"
 ```
 
 ## Imputing missing values
@@ -95,9 +117,17 @@ Note that there are a number of days/intervals where there are missing values. T
 
 4. Make a histogram of the total number of steps taken each day and calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
-```{r, fig.height=5}
+
+```r
 naValues <- sum(is.na(activity$steps))
 print(paste("Number of NA values:", naValues, "out of", nrow(activity)))
+```
+
+```
+## [1] "Number of NA values: 2304 out of 17568"
+```
+
+```r
 newActivity <- activity
 for (i in 1:nrow(newActivity)) {
   if (is.na(newActivity$steps[i])) {
@@ -114,15 +144,30 @@ newDailyMedian <- median(newDailySum$steps)
 # Histogram of corrected total number of steps taken per day
 hist(newDailySum$steps, breaks=10, xlab="Steps", 
      main="Total steps taken per day (corrected)")
+```
 
+![](PA1_template_files/figure-html/unnamed-chunk-4-1.png) 
+
+```r
 # Print the corrected mean and median values (rounded to one decimal place)
 # Also compare to our original computations with missing values
 print(paste("Mean of corrected daily sum: ", round(newDailyMean, 1),
             ", (Compare to ", round(dailyMean, 1), ")",
             sep=""))
+```
+
+```
+## [1] "Mean of corrected daily sum: 10766.2, (Compare to 9354.2)"
+```
+
+```r
 print(paste("Median of corrected daily sum: ", round(newDailyMedian, 1),
             ", (Compare to ", round(dailyMedian, 1), ")",
             sep=""))
+```
+
+```
+## [1] "Median of corrected daily sum: 10766.2, (Compare to 10395)"
 ```
 
 ## Are there differences in activity patterns between weekdays and weekends?
@@ -133,7 +178,8 @@ Use the dataset with the filled-in missing values for this part.
 
 2. Make a panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
 
-```{r}
+
+```r
 intervalMeans <- newActivity %>%
     mutate(dayType = as.factor(ifelse(weekdays(newActivity$date) %in%
                                         c("Saturday","Sunday"), "Weekend", "Weekday"))) %>%
@@ -156,7 +202,7 @@ p <- xyplot(steps ~ interval | levels(dayType), data=intervalMeans, type="l",
 print(p)
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-5-1.png) 
+
 <!-- Clean temporary variables from the environment -->
-```{r,echo=FALSE,results="hide"}
-rm(p, xLabels, xTickAt, naValues, maxEntryIndex, i, intervalIndex)
-```
+

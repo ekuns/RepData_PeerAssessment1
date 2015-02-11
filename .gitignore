@@ -1,0 +1,6 @@
+.Rproj.user
+.Rhistory
+.RData
+work.R
+PA1_template_files/**
+data/**
