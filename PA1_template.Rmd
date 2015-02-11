@@ -5,9 +5,11 @@ output:
     keep_md: true
 ---
 
+# Reproducible Research: Peer Assessment 1
+
 <!-- 
-  Note:  For consistency, don't use "Knit HTML".  Instead, in the R Console,
-  run the command:  knit2html("PA1_template.Rmd")
+  Note:  For consistency, don't use RStudio "Knit HTML".  Instead, in the R
+  Console, run the command:  knit2html("PA1_template.Rmd")
   -->
 
 ## Loading and preprocessing the data
@@ -23,7 +25,7 @@ output:
 library(lattice)
 library(dplyr)
 ```
-```{r}
+```{r loadingAndProcessing}
 # Unzip the data into a "data" folder which GIT will ignore (see the file .gitignore)
 # We specify the column classes in advance, and then convert the interval from
 # an integer to a human-readable factor.
@@ -38,12 +40,10 @@ activity$interval <- as.factor(sub("(\\d\\d)(\\d\\d)", "\\1:\\2",
 For this part of the assignment, you can ignore the missing values in the dataset.
 
 1. Calculate the total number of steps taken per day
-
 2. Make a histogram of the total number of steps taken each day
-
 3. Calculate and report the mean and median of the total number of steps taken per day
 
-```{r, fig.height=5}
+```{r totalStepsPerDay, fig.height=5}
 # Calculate daily sum, then the mean and median of the sums (so we can compare, later)
 dailySum <- activity %>% group_by(date) %>%
             summarise_each(funs(sum(., na.rm = TRUE)), steps)
@@ -53,6 +53,13 @@ dailyMedian <- median(dailySum$steps)
 # Histogram of total number of steps taken per day
 hist(dailySum$steps, breaks=10, xlab="Steps", main="Total steps taken per day")
 
+# That's a big bump at zero ... how many are exactly 0.0?
+zeroDays <- sum(dailySum$steps == 0)
+totalDays <- length(dailySum$steps)
+print(paste(zeroDays, " of ", totalDays, " days (", 
+            round(100 * zeroDays / totalDays, 1), "%) have no steps at all",
+            sep=""))
+
 # Print the mean and median values (rounded to one decimal place)
 print(paste("Mean of daily sum:", round(dailyMean, 1)))
 print(paste("Median of daily sum:", round(dailyMedian, 1)))
@@ -60,26 +67,26 @@ print(paste("Median of daily sum:", round(dailyMedian, 1)))
 
 ## What is the average daily activity pattern?
 
-1. Make a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+1. Make a time series plot of the 5-minute interval (x-axis) and the average
+   number of steps taken, averaged across all days (y-axis)
+2. Which 5-minute interval, on average across all the days in the dataset,
+   contains the maximum number of steps?
 
-2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
-
-```{r, fig.height=5}
+```{r dailyActivity, fig.height=5}
 intervalMeans <- activity %>% group_by(interval) %>%
                  summarise_each(funs(mean(., na.rm = TRUE)), steps)
-maxEntryIndex <- which.max(intervalMeans$steps)
 
 xTickAt = seq(1, 12*24, by=12) # one label every hour on the x axis
 xLabels = intervalMeans$interval[xTickAt]
 p <- xyplot(steps ~ interval, data=intervalMeans, type="l",
             main="Average # steps per 5 minute interval",
             xlab="5-minute Interval", ylab="Average Number of steps",
-            scales=list(x=list(at=xTickAt,labels=xLabels), rot=90))
+            scales=list(x=list(at=xTickAt, labels=xLabels), rot=90))
 print(p)
 
-print(paste("5-minute interval with the most average steps: ", 
-            intervalMeans$interval[maxEntryIndex], " with ",
-            round(intervalMeans$steps[maxEntryIndex], 1), " steps",
+maxEntry <- intervalMeans[which.max(intervalMeans$steps),]
+print(paste("5-minute interval with the maximum average number of steps: ", 
+            maxEntry$interval, " with ", round(maxEntry$steps, 1), " steps",
             sep=""))
 ```
 
@@ -88,18 +95,15 @@ print(paste("5-minute interval with the most average steps: ",
 Note that there are a number of days/intervals where there are missing values. The presence of missing days may introduce bias into some calculations or summaries of the data.
 
 1. Calculate and report the total number of missing values in the dataset
-
 2. Devise a strategy for filling in all of the missing values in the dataset.
-
-3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
-
+3. Create a new dataset that is equal to the original dataset but with the
+   missing data filled in.
 4. Make a histogram of the total number of steps taken each day
-
 5. calculate and report the mean and median total number of steps taken per day.
 
 Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
-```{r, fig.height=5}
+```{r missingValues, fig.height=5}
 naValues <- sum(is.na(activity$steps))
 print(paste("Number of NA values:", naValues, "out of", nrow(activity)))
 
@@ -127,13 +131,27 @@ hist(dailySum$steps, breaks=10, add=TRUE, col=transBlue,)
 legend("topright", legend=c("Corrected","Uncorrected"), 
        fill=c(transRed, transBlue))
 
+# After imputation, do we still have a lot of days with 0.0 steps?
+newZeroDays <- sum(newDailySum$steps == 0)
+print(paste("After imputation, ", newZeroDays, " of ", totalDays, " days (", 
+            round(-100 * newZeroDays / totalDays, 1), "%) have no steps at all",
+            sep=""))
+if (zeroDays > 0) {
+  reduction <- round(-100 * (newZeroDays - zeroDays) / zeroDays, 1)
+  print(paste("This is a reduction of ", reduction, "%", sep=""))
+}
+
 # Print the corrected mean and median values (rounded to one decimal place)
 # Also compare to our original computations with missing values
+meanDiff <- round((newDailyMean - dailyMean) / dailyMean * 100, 1)
 print(paste("Mean of corrected daily sum: ", round(newDailyMean, 1),
-            ", (Compare to ", round(dailyMean, 1), ")",
+            ", (Compare to ", round(dailyMean, 1), "), a change of ",
+            meanDiff, "%",
             sep=""))
+medianDiff <- round((newDailyMedian - dailyMedian) / dailyMedian * 100, 1)
 print(paste("Median of corrected daily sum: ", round(newDailyMedian, 1),
-            ", (Compare to ", round(dailyMedian, 1), ")",
+            ", (Compare to ", round(dailyMedian, 1), "), a change of ",
+            medianDiff, "%",
             sep=""))
 ```
 
@@ -141,14 +159,18 @@ print(paste("Median of corrected daily sum: ", round(newDailyMedian, 1),
 
 Use the dataset with the filled-in missing values for this part.
 
-1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+1. Create a new factor variable in the dataset with two levels.
+2. Make a panel plot containing a time series plot of the 5-minute interval
+   (x-axis) and the average number of steps taken, averaged across all weekday
+   days or weekend days (y-axis). See the
+   [README](./instructions_fig/sample_panelplot.png) file to see an example 
+   using simulated data of what this plot should look like.
 
-2. Make a panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
-
-```{r}
-dayTypeIntervalMeans <- newActivity %>%
-    mutate(dayType = as.factor(ifelse(weekdays(newActivity$date) %in%
-                                        c("Saturday","Sunday"), "Weekend", "Weekday"))) %>%
+```{r weekendWeekdayDifferences}
+dayTypeColumn <- ifelse(weekdays(newActivity$date) %in% c("Saturday","Sunday"),
+                        "Weekend", "Weekday")
+dayTypeIntervalMeans <- newActivity %>% ungroup() %>%
+    mutate(dayType = as.factor(dayTypeColumn)) %>%
     group_by(interval, dayType) %>%
     summarise_each(funs(mean(., na.rm = TRUE)), steps)
 
@@ -169,7 +191,7 @@ print(p)
 ```
 
 <!-- Clean temporary variables from the environment -->
-```{r,echo=FALSE,results="hide"}
-rm(p, xLabels, xTickAt, naValues, maxEntryIndex, i, intervalIndex,
-   transBlue, transRed)
+```{r CleanUp, echo=FALSE, results="hide"}
+rm(p, xLabels, xTickAt, naValues, maxEntry, transBlue, transRed, meanDiff,
+   medianDiff, dayTypeColumn, zeroDays, totalDays, newZeroDays, reduction)
 ```
