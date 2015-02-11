@@ -93,18 +93,21 @@ Note that there are a number of days/intervals where there are missing values. T
 
 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
-4. Make a histogram of the total number of steps taken each day and calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+4. Make a histogram of the total number of steps taken each day
+
+5. calculate and report the mean and median total number of steps taken per day.
+
+Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
 ```{r, fig.height=5}
 naValues <- sum(is.na(activity$steps))
 print(paste("Number of NA values:", naValues, "out of", nrow(activity)))
-newActivity <- activity
-for (i in 1:nrow(newActivity)) {
-  if (is.na(newActivity$steps[i])) {
-    intervalIndex <- intervalMeans$interval == newActivity$interval[i]
-    newActivity$steps[i] = intervalMeans[intervalIndex,]$steps
-  }
-}
+
+# "Group by" interval so the "mean" will calculate along that variable
+# This replaces any NA value with the average value of all non-NA values
+# for the same time interval.
+newActivity <- activity %>% group_by(interval) %>%
+  mutate(steps = ifelse(is.na(steps), mean(steps,na.rm=TRUE), steps))
 
 newDailySum <- newActivity %>% group_by(date) %>%
                 summarise_each(funs(sum(., na.rm = TRUE)), steps)
@@ -114,6 +117,15 @@ newDailyMedian <- median(newDailySum$steps)
 # Histogram of corrected total number of steps taken per day
 hist(newDailySum$steps, breaks=10, xlab="Steps", 
      main="Total steps taken per day (corrected)")
+
+# Compare corrected and uncorrected histograms
+transRed <- rgb(1, 0, 0, 0.6)
+transBlue <- rgb(0, 0, 1, 0.6)
+hist(newDailySum$steps, breaks=10, xlab="Steps", 
+     main="Total steps taken per day (corrected vs uncorrected)", col=transRed)
+hist(dailySum$steps, breaks=10, add=TRUE, col=transBlue,)
+legend("topright", legend=c("Corrected","Uncorrected"), 
+       fill=c(transRed, transBlue))
 
 # Print the corrected mean and median values (rounded to one decimal place)
 # Also compare to our original computations with missing values
@@ -134,7 +146,7 @@ Use the dataset with the filled-in missing values for this part.
 2. Make a panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
 
 ```{r}
-intervalMeans <- newActivity %>%
+dayTypeIntervalMeans <- newActivity %>%
     mutate(dayType = as.factor(ifelse(weekdays(newActivity$date) %in%
                                         c("Saturday","Sunday"), "Weekend", "Weekday"))) %>%
     group_by(interval, dayType) %>%
@@ -147,9 +159,9 @@ intervalMeans <- newActivity %>%
 # works perfectly.
 #########
 xTickAt = seq(1, 12*24*2, by=24) # one label every hour on the x axis
-xLabels = intervalMeans$interval[xTickAt]
+xLabels = dayTypeIntervalMeans$interval[xTickAt]
 xTickAt = seq(1, 12*24, by=12) # one label every hour on the x axis
-p <- xyplot(steps ~ interval | levels(dayType), data=intervalMeans, type="l",
+p <- xyplot(steps ~ interval | levels(dayType), data=dayTypeIntervalMeans, type="l",
             layout=c(1,2), main="Average # steps per 5 minute interval",
             xlab="5-minute Interval", ylab="Average Number of steps",
             scales=list(x=list(at=xTickAt,labels=xLabels), rot=90))
@@ -158,5 +170,6 @@ print(p)
 
 <!-- Clean temporary variables from the environment -->
 ```{r,echo=FALSE,results="hide"}
-rm(p, xLabels, xTickAt, naValues, maxEntryIndex, i, intervalIndex)
+rm(p, xLabels, xTickAt, naValues, maxEntryIndex, i, intervalIndex,
+   transBlue, transRed)
 ```

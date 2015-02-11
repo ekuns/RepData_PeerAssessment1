@@ -120,7 +120,11 @@ Note that there are a number of days/intervals where there are missing values. T
 
 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
-4. Make a histogram of the total number of steps taken each day and calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+4. Make a histogram of the total number of steps taken each day
+
+5. calculate and report the mean and median total number of steps taken per day.
+
+Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
 
 ```r
@@ -133,13 +137,11 @@ print(paste("Number of NA values:", naValues, "out of", nrow(activity)))
 ```
 
 ```r
-newActivity <- activity
-for (i in 1:nrow(newActivity)) {
-  if (is.na(newActivity$steps[i])) {
-    intervalIndex <- intervalMeans$interval == newActivity$interval[i]
-    newActivity$steps[i] = intervalMeans[intervalIndex,]$steps
-  }
-}
+# "Group by" interval so the "mean" will calculate along that variable
+# This replaces any NA value with the average value of all non-NA values
+# for the same time interval.
+newActivity <- activity %>% group_by(interval) %>%
+  mutate(steps = ifelse(is.na(steps), mean(steps,na.rm=TRUE), steps))
 
 newDailySum <- newActivity %>% group_by(date) %>%
                 summarise_each(funs(sum(., na.rm = TRUE)), steps)
@@ -152,6 +154,19 @@ hist(newDailySum$steps, breaks=10, xlab="Steps",
 ```
 
 ![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4-1.png) 
+
+```r
+# Compare corrected and uncorrected histograms
+transRed <- rgb(1, 0, 0, 0.6)
+transBlue <- rgb(0, 0, 1, 0.6)
+hist(newDailySum$steps, breaks=10, xlab="Steps", 
+     main="Total steps taken per day (corrected vs uncorrected)", col=transRed)
+hist(dailySum$steps, breaks=10, add=TRUE, col=transBlue,)
+legend("topright", legend=c("Corrected","Uncorrected"), 
+       fill=c(transRed, transBlue))
+```
+
+![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4-2.png) 
 
 ```r
 # Print the corrected mean and median values (rounded to one decimal place)
@@ -185,12 +200,18 @@ Use the dataset with the filled-in missing values for this part.
 
 
 ```r
-intervalMeans <- newActivity %>%
+dayTypeIntervalMeans <- newActivity %>%
     mutate(dayType = as.factor(ifelse(weekdays(newActivity$date) %in%
                                         c("Saturday","Sunday"), "Weekend", "Weekday"))) %>%
     group_by(interval, dayType) %>%
     summarise_each(funs(mean(., na.rm = TRUE)), steps)
+```
 
+```
+## Error in eval(expr, envir, enclos): incompatible size (%d), expecting %d (the group size) or 1
+```
+
+```r
 #########
 # FIXME: Due to interval being a factor, the X axis labels get screwed up, even
 # though the plot itself is correct.  Changing the xTickAt works around the
@@ -198,12 +219,26 @@ intervalMeans <- newActivity %>%
 # works perfectly.
 #########
 xTickAt = seq(1, 12*24*2, by=24) # one label every hour on the x axis
-xLabels = intervalMeans$interval[xTickAt]
+xLabels = dayTypeIntervalMeans$interval[xTickAt]
+```
+
+```
+## Error in eval(expr, envir, enclos): object 'dayTypeIntervalMeans' not found
+```
+
+```r
 xTickAt = seq(1, 12*24, by=12) # one label every hour on the x axis
-p <- xyplot(steps ~ interval | levels(dayType), data=intervalMeans, type="l",
+p <- xyplot(steps ~ interval | levels(dayType), data=dayTypeIntervalMeans, type="l",
             layout=c(1,2), main="Average # steps per 5 minute interval",
             xlab="5-minute Interval", ylab="Average Number of steps",
             scales=list(x=list(at=xTickAt,labels=xLabels), rot=90))
+```
+
+```
+## Error in eval(substitute(groups), data, environment(x)): object 'dayTypeIntervalMeans' not found
+```
+
+```r
 print(p)
 ```
 
@@ -211,3 +246,12 @@ print(p)
 
 <!-- Clean temporary variables from the environment -->
 
+```
+## Warning in rm(p, xLabels, xTickAt, naValues, maxEntryIndex, i,
+## intervalIndex, : object 'i' not found
+```
+
+```
+## Warning in rm(p, xLabels, xTickAt, naValues, maxEntryIndex, i,
+## intervalIndex, : object 'intervalIndex' not found
+```
