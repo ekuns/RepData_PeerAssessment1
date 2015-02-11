@@ -106,7 +106,7 @@ xLabels = intervalMeans$interval[xTickAt]
 p <- xyplot(steps ~ interval, data=intervalMeans, type="l",
             main="Average # steps per 5 minute interval",
             xlab="5-minute Interval", ylab="Average Number of steps",
-            scales=list(x=list(at=xTickAt, labels=xLabels), rot=90))
+            scales=list(x=list(at=xTickAt, labels=xLabels, rot=90)))
 print(p)
 ```
 
@@ -259,7 +259,7 @@ xTickAt = seq(1, 12*24, by=12) # one label every hour on the x axis
 p <- xyplot(steps ~ interval | levels(dayType), data=dayTypeIntervalMeans, type="l",
             layout=c(1,2), main="Average # steps per 5 minute interval",
             xlab="5-minute Interval", ylab="Average Number of steps",
-            scales=list(x=list(at=xTickAt,labels=xLabels), rot=90))
+            scales=list(x=list(at=xTickAt, labels=xLabels, rot=90)))
 print(p)
 ```
 
