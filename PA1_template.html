@@ -204,8 +204,8 @@ hr {
 <h1>Reproducible Research: Peer Assessment 1</h1>
 
 <!-- 
-  Note:  For consistency, don't use RStudio "Knit HTML".  Instead, in the R
-  Console, run the command:  knit2html("PA1_template.Rmd")
+  Note:  For consistency, don't use RStudio's "Knit HTML" button.  Instead, in
+  the R Console, run the command:  knit2html("PA1_template.Rmd")
   -->
 
 <h2>Loading and preprocessing the data</h2>
@@ -290,8 +290,8 @@ contains the maximum number of steps?</li>
 <pre><code class="r">intervalMeans &lt;- activity %&gt;% group_by(interval) %&gt;%
                  summarise_each(funs(mean(., na.rm = TRUE)), steps)
 
-xTickAt = seq(1, 12*24, by=12) # one label every hour on the x axis
-xLabels = intervalMeans$interval[xTickAt]
+xTickAt &lt;- seq(1, 12*24, by=12) # one label every hour on the x axis
+xLabels &lt;- intervalMeans$interval[xTickAt]
 p &lt;- xyplot(steps ~ interval, data=intervalMeans, type=&quot;l&quot;,
             main=&quot;Average # steps per 5 minute interval&quot;,
             xlab=&quot;5-minute Interval&quot;, ylab=&quot;Average Number of steps&quot;,
@@ -326,18 +326,22 @@ missing data filled in.</li>
 <p>Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?</p>
 
 <pre><code class="r">naValues &lt;- sum(is.na(activity$steps))
-print(paste(&quot;Number of NA values:&quot;, naValues, &quot;out of&quot;, nrow(activity)))
+print(paste(&quot;Number of missing values: &quot;, naValues, &quot; out of &quot;, nrow(activity),
+            &quot; (&quot;, round(100 * naValues/nrow(activity), 1), &quot;%)&quot;,
+            sep=&quot;&quot;))
 </code></pre>
 
-<pre><code>## [1] &quot;Number of NA values: 2304 out of 17568&quot;
+<pre><code>## [1] &quot;Number of missing values: 2304 out of 17568 (13.1%)&quot;
 </code></pre>
 
-<pre><code class="r"># &quot;Group by&quot; interval so the &quot;mean&quot; will calculate along that variable
-# This replaces any NA value with the average value of all non-NA values
-# for the same time interval.
+<pre><code class="r"># Strategy: replace NA values with the mean of all non-NA values for the same
+# 5-minute time interval across all days. Note that the group_by(interval) 
+# causes the &quot;mean&quot; to calculate along that variable.
+# This dataset is the same as &quot;activity&quot; but with missing values filled in.
 newActivity &lt;- activity %&gt;% group_by(interval) %&gt;%
-  mutate(steps = ifelse(is.na(steps), mean(steps,na.rm=TRUE), steps))
+  mutate(steps = ifelse(is.na(steps), mean(steps, na.rm=TRUE), steps))
 
+# Recompute the daily sums now that we have imputed missing values
 newDailySum &lt;- newActivity %&gt;% group_by(date) %&gt;%
                 summarise_each(funs(sum(., na.rm = TRUE)), steps)
 newDailyMean &lt;- mean(newDailySum$steps)
@@ -350,12 +354,12 @@ hist(newDailySum$steps, breaks=10, xlab=&quot;Steps&quot;,
 
 <p><img src="data:image/png;base64,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" alt="plot of chunk missingValues"/> </p>
 
-<pre><code class="r"># Compare corrected and uncorrected histograms
+<pre><code class="r"># Compare corrected and uncorrected histograms on one plot
 transRed &lt;- rgb(1, 0, 0, 0.6)
 transBlue &lt;- rgb(0, 0, 1, 0.6)
 hist(newDailySum$steps, breaks=10, xlab=&quot;Steps&quot;, 
      main=&quot;Total steps taken per day (corrected vs uncorrected)&quot;, col=transRed)
-hist(dailySum$steps, breaks=10, add=TRUE, col=transBlue,)
+hist(dailySum$steps, breaks=10, add=TRUE, col=transBlue)
 legend(&quot;topright&quot;, legend=c(&quot;Corrected&quot;,&quot;Uncorrected&quot;), 
        fill=c(transRed, transBlue))
 </code></pre>
@@ -365,7 +369,7 @@ legend(&quot;topright&quot;, legend=c(&quot;Corrected&quot;,&quot;Uncorrected&qu
 <pre><code class="r"># After imputation, do we still have a lot of days with 0.0 steps?
 newZeroDays &lt;- sum(newDailySum$steps == 0)
 print(paste(&quot;After imputation, &quot;, newZeroDays, &quot; of &quot;, totalDays, &quot; days (&quot;, 
-            round(-100 * newZeroDays / totalDays, 1), &quot;%) have no steps at all&quot;,
+            round(100 * newZeroDays / totalDays, 1), &quot;%) have no steps at all&quot;,
             sep=&quot;&quot;))
 </code></pre>
 
@@ -381,8 +385,8 @@ print(paste(&quot;After imputation, &quot;, newZeroDays, &quot; of &quot;, total
 <pre><code>## [1] &quot;This is a reduction of 100%&quot;
 </code></pre>
 
-<pre><code class="r"># Print the corrected mean and median values (rounded to one decimal place)
-# Also compare to our original computations with missing values
+<pre><code class="r"># Print the corrected mean and median values (rounded to one decimal place).
+# Also compare to our original computations with missing values.
 meanDiff &lt;- round((newDailyMean - dailyMean) / dailyMean * 100, 1)
 print(paste(&quot;Mean of corrected daily sum: &quot;, round(newDailyMean, 1),
             &quot;, (Compare to &quot;, round(dailyMean, 1), &quot;), a change of &quot;,
@@ -416,22 +420,21 @@ days or weekend days (y-axis). See the
 using simulated data of what this plot should look like.</li>
 </ol>
 
-<pre><code class="r">dayTypeColumn &lt;- ifelse(weekdays(newActivity$date) %in% c(&quot;Saturday&quot;,&quot;Sunday&quot;),
+<pre><code class="r"># Yes, this assumes that weekday names are returned in English...
+dayTypeColumn &lt;- ifelse(weekdays(newActivity$date) %in% c(&quot;Saturday&quot;,&quot;Sunday&quot;),
                         &quot;Weekend&quot;, &quot;Weekday&quot;)
+# Note that without the ungroup() this won&#39;t work.
 dayTypeIntervalMeans &lt;- newActivity %&gt;% ungroup() %&gt;%
     mutate(dayType = as.factor(dayTypeColumn)) %&gt;%
     group_by(interval, dayType) %&gt;%
-    summarise_each(funs(mean(., na.rm = TRUE)), steps)
+    summarise_each(funs(mean(., na.rm = TRUE)), steps) %&gt;%
+    arrange(interval, dayType)
 
-#########
-# FIXME: Due to interval being a factor, the X axis labels get screwed up, even
-# though the plot itself is correct.  Changing the xTickAt works around the
-# issue, but it&#39;s a kludge.  Would like something better even though that kludge
-# works perfectly.
-#########
-xTickAt = seq(1, 12*24*2, by=24) # one label every hour on the x axis
-xLabels = dayTypeIntervalMeans$interval[xTickAt]
-xTickAt = seq(1, 12*24, by=12) # one label every hour on the x axis
+# For the chart to work, the data.frame must be sorted by the x axis value first.
+# Thus, we have to take every second item on the x axis to get the labels.
+# If there were 3 &quot;dayType&quot; values, we&#39;d have to take every third item.
+xTickAt &lt;- seq(1, 12*24, by=12) # one label every hour on the x axis
+xLabels &lt;- dayTypeIntervalMeans$interval[xTickAt * 2]
 p &lt;- xyplot(steps ~ interval | levels(dayType), data=dayTypeIntervalMeans, type=&quot;l&quot;,
             layout=c(1,2), main=&quot;Average # steps per 5 minute interval&quot;,
             xlab=&quot;5-minute Interval&quot;, ylab=&quot;Average Number of steps&quot;,

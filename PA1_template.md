@@ -8,8 +8,8 @@ output:
 # Reproducible Research: Peer Assessment 1
 
 <!-- 
-  Note:  For consistency, don't use RStudio "Knit HTML".  Instead, in the R
-  Console, run the command:  knit2html("PA1_template.Rmd")
+  Note:  For consistency, don't use RStudio's "Knit HTML" button.  Instead, in
+  the R Console, run the command:  knit2html("PA1_template.Rmd")
   -->
 
 ## Loading and preprocessing the data
@@ -101,8 +101,8 @@ print(paste("Median of daily sum:", round(dailyMedian, 1)))
 intervalMeans <- activity %>% group_by(interval) %>%
                  summarise_each(funs(mean(., na.rm = TRUE)), steps)
 
-xTickAt = seq(1, 12*24, by=12) # one label every hour on the x axis
-xLabels = intervalMeans$interval[xTickAt]
+xTickAt <- seq(1, 12*24, by=12) # one label every hour on the x axis
+xLabels <- intervalMeans$interval[xTickAt]
 p <- xyplot(steps ~ interval, data=intervalMeans, type="l",
             main="Average # steps per 5 minute interval",
             xlab="5-minute Interval", ylab="Average Number of steps",
@@ -139,20 +139,24 @@ Do these values differ from the estimates from the first part of the assignment?
 
 ```r
 naValues <- sum(is.na(activity$steps))
-print(paste("Number of NA values:", naValues, "out of", nrow(activity)))
+print(paste("Number of missing values: ", naValues, " out of ", nrow(activity),
+            " (", round(100 * naValues/nrow(activity), 1), "%)",
+            sep=""))
 ```
 
 ```
-## [1] "Number of NA values: 2304 out of 17568"
+## [1] "Number of missing values: 2304 out of 17568 (13.1%)"
 ```
 
 ```r
-# "Group by" interval so the "mean" will calculate along that variable
-# This replaces any NA value with the average value of all non-NA values
-# for the same time interval.
+# Strategy: replace NA values with the mean of all non-NA values for the same
+# 5-minute time interval across all days. Note that the group_by(interval) 
+# causes the "mean" to calculate along that variable.
+# This dataset is the same as "activity" but with missing values filled in.
 newActivity <- activity %>% group_by(interval) %>%
-  mutate(steps = ifelse(is.na(steps), mean(steps,na.rm=TRUE), steps))
+  mutate(steps = ifelse(is.na(steps), mean(steps, na.rm=TRUE), steps))
 
+# Recompute the daily sums now that we have imputed missing values
 newDailySum <- newActivity %>% group_by(date) %>%
                 summarise_each(funs(sum(., na.rm = TRUE)), steps)
 newDailyMean <- mean(newDailySum$steps)
@@ -166,12 +170,12 @@ hist(newDailySum$steps, breaks=10, xlab="Steps",
 ![plot of chunk missingValues](figure/missingValues-1.png) 
 
 ```r
-# Compare corrected and uncorrected histograms
+# Compare corrected and uncorrected histograms on one plot
 transRed <- rgb(1, 0, 0, 0.6)
 transBlue <- rgb(0, 0, 1, 0.6)
 hist(newDailySum$steps, breaks=10, xlab="Steps", 
      main="Total steps taken per day (corrected vs uncorrected)", col=transRed)
-hist(dailySum$steps, breaks=10, add=TRUE, col=transBlue,)
+hist(dailySum$steps, breaks=10, add=TRUE, col=transBlue)
 legend("topright", legend=c("Corrected","Uncorrected"), 
        fill=c(transRed, transBlue))
 ```
@@ -182,7 +186,7 @@ legend("topright", legend=c("Corrected","Uncorrected"),
 # After imputation, do we still have a lot of days with 0.0 steps?
 newZeroDays <- sum(newDailySum$steps == 0)
 print(paste("After imputation, ", newZeroDays, " of ", totalDays, " days (", 
-            round(-100 * newZeroDays / totalDays, 1), "%) have no steps at all",
+            round(100 * newZeroDays / totalDays, 1), "%) have no steps at all",
             sep=""))
 ```
 
@@ -202,8 +206,8 @@ if (zeroDays > 0) {
 ```
 
 ```r
-# Print the corrected mean and median values (rounded to one decimal place)
-# Also compare to our original computations with missing values
+# Print the corrected mean and median values (rounded to one decimal place).
+# Also compare to our original computations with missing values.
 meanDiff <- round((newDailyMean - dailyMean) / dailyMean * 100, 1)
 print(paste("Mean of corrected daily sum: ", round(newDailyMean, 1),
             ", (Compare to ", round(dailyMean, 1), "), a change of ",
@@ -240,22 +244,21 @@ Use the dataset with the filled-in missing values for this part.
 
 
 ```r
+# Yes, this assumes that weekday names are returned in English...
 dayTypeColumn <- ifelse(weekdays(newActivity$date) %in% c("Saturday","Sunday"),
                         "Weekend", "Weekday")
+# Note that without the ungroup() this won't work.
 dayTypeIntervalMeans <- newActivity %>% ungroup() %>%
     mutate(dayType = as.factor(dayTypeColumn)) %>%
     group_by(interval, dayType) %>%
-    summarise_each(funs(mean(., na.rm = TRUE)), steps)
+    summarise_each(funs(mean(., na.rm = TRUE)), steps) %>%
+    arrange(interval, dayType)
 
-#########
-# FIXME: Due to interval being a factor, the X axis labels get screwed up, even
-# though the plot itself is correct.  Changing the xTickAt works around the
-# issue, but it's a kludge.  Would like something better even though that kludge
-# works perfectly.
-#########
-xTickAt = seq(1, 12*24*2, by=24) # one label every hour on the x axis
-xLabels = dayTypeIntervalMeans$interval[xTickAt]
-xTickAt = seq(1, 12*24, by=12) # one label every hour on the x axis
+# For the chart to work, the data.frame must be sorted by the x axis value first.
+# Thus, we have to take every second item on the x axis to get the labels.
+# If there were 3 "dayType" values, we'd have to take every third item.
+xTickAt <- seq(1, 12*24, by=12) # one label every hour on the x axis
+xLabels <- dayTypeIntervalMeans$interval[xTickAt * 2]
 p <- xyplot(steps ~ interval | levels(dayType), data=dayTypeIntervalMeans, type="l",
             layout=c(1,2), main="Average # steps per 5 minute interval",
             xlab="5-minute Interval", ylab="Average Number of steps",
