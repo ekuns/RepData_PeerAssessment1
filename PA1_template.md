@@ -14,9 +14,8 @@ output:
 
 ## Loading and preprocessing the data
 
-1. Show any code that is needed to load the data
-2. Show any code that is needed to process/transform the data (if necessary)
-   into a format suitable for your analysis
+1. Show code to load the data.
+2. Show code to process/transform the data into a format suitable for your analysis.
 
 
 ```r
@@ -27,10 +26,11 @@ library(lattice)
 library(dplyr)
 ```
 
+
 ```r
-# Unzip the data into a "data" folder which GIT will ignore (see the file .gitignore)
-# We specify the column classes in advance, and then convert the interval from
-# an integer to a human-readable factor.
+# Unzip the data into a "data" folder which GIT will ignore (see the file
+# .gitignore). We specify the column classes in advance.  We convert the
+# interval from an integer to a human-readable factor.
 unzip("activity.zip", exdir = "data")
 activity <- read.csv("data/activity.csv", colClasses=c("integer", "Date", "integer"))
 activity$interval <- as.factor(sub("(\\d\\d)(\\d\\d)", "\\1:\\2", 
@@ -39,11 +39,12 @@ activity$interval <- as.factor(sub("(\\d\\d)(\\d\\d)", "\\1:\\2",
 
 ## What is mean total number of steps taken per day?
 
-For this part of the assignment, you can ignore the missing values in the dataset.
+For this part of the assignment, ignore missing values in the dataset.
 
-1. Calculate the total number of steps taken per day
-2. Make a histogram of the total number of steps taken each day
-3. Calculate and report the mean and median of the total number of steps taken per day
+1. Calculate the total number of steps taken per day.
+2. Make a histogram of the total number of steps taken each day.
+3. Calculate and report the mean and median of the total number of steps taken
+   per day.
 
 
 ```r
@@ -91,16 +92,19 @@ print(paste("Median of daily sum:", round(dailyMedian, 1)))
 
 ## What is the average daily activity pattern?
 
-1. Make a time series plot of the 5-minute interval (x-axis) and the average
-   number of steps taken, averaged across all days (y-axis)
-2. Which 5-minute interval, on average across all the days in the dataset,
+1. Make a time series plot of the 5-minute intervals and the average number of
+   steps taken, averaged across all days
+2. Which 5-minute interval, on **average** across all the days in the dataset,
    contains the maximum number of steps?
 
 
 ```r
+# Sum intervals across all days
 intervalMeans <- activity %>% group_by(interval) %>%
                  summarise_each(funs(mean(., na.rm = TRUE)), steps)
 
+# Plot average number of steps for each interval.  Our X axis is a factor, so
+# we have to explicitly say where to put labels and what labels.
 xTickAt <- seq(1, 12*24, by=12) # one label every hour on the x axis
 xLabels <- intervalMeans$interval[xTickAt]
 p <- xyplot(steps ~ interval, data=intervalMeans, type="l",
@@ -113,6 +117,7 @@ print(p)
 ![plot of chunk dailyActivity](figure/dailyActivity-1.png) 
 
 ```r
+# Figure out which data.frame row has the maximum average number of steps
 maxEntry <- intervalMeans[which.max(intervalMeans$steps),]
 print(paste("5-minute interval with the maximum average number of steps: ", 
             maxEntry$interval, " with ", round(maxEntry$steps, 1), " steps",
@@ -125,27 +130,33 @@ print(paste("5-minute interval with the maximum average number of steps: ",
 
 ## Imputing missing values
 
-Note that there are a number of days/intervals where there are missing values. The presence of missing days may introduce bias into some calculations or summaries of the data.
+There are a number of days/intervals where there are missing values. This may
+introduce bias into some calculations or summaries of the data.
 
-1. Calculate and report the total number of missing values in the dataset
+1. Calculate and report the total number of missing values in the dataset.
 2. Devise a strategy for filling in all of the missing values in the dataset.
 3. Create a new dataset that is equal to the original dataset but with the
    missing data filled in.
-4. Make a histogram of the total number of steps taken each day
-5. calculate and report the mean and median total number of steps taken per day.
+4. Make a histogram of the total number of steps taken each day.
+5. Calculate and report the mean and median total number of steps taken per day.
 
-Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+Do these values differ from the estimates from the first part of the assignment?
+What is the impact of imputing missing data on the estimates of the total daily
+number of steps?
 
 
 ```r
+# Count missing values
 naValues <- sum(is.na(activity$steps))
-print(paste("Number of missing values: ", naValues, " out of ", nrow(activity),
-            " (", round(100 * naValues/nrow(activity), 1), "%)",
+naDays <- length(unique(activity[is.na(activity$steps), "date"]))
+print(paste("There are ", naValues, " missing values out of ", nrow(activity),
+            " (", round(100 * naValues / nrow(activity), 1), "%), on ", naDays,
+            " different days, averaging ", naValues/naDays, " per day",
             sep=""))
 ```
 
 ```
-## [1] "Number of missing values: 2304 out of 17568 (13.1%)"
+## [1] "There are 2304 missing values out of 17568 (13.1%), on 8 different days, averaging 288 per day"
 ```
 
 ```r
@@ -170,6 +181,32 @@ hist(newDailySum$steps, breaks=10, xlab="Steps",
 ![plot of chunk missingValues](figure/missingValues-1.png) 
 
 ```r
+# Print the corrected mean and median values (rounded to one decimal place).
+# Also compare to our original computations with missing values.
+meanDiff <- round((newDailyMean - dailyMean) / dailyMean * 100, 1)
+print(paste("Mean of corrected daily sum: ", round(newDailyMean, 1),
+            " (uncorrected is ", round(dailyMean, 1), "), a change of ",
+            meanDiff, "%",
+            sep=""))
+```
+
+```
+## [1] "Mean of corrected daily sum: 10766.2 (uncorrected is 9354.2), a change of 15.1%"
+```
+
+```r
+medianDiff <- round((newDailyMedian - dailyMedian) / dailyMedian * 100, 1)
+print(paste("Median of corrected daily sum: ", round(newDailyMedian, 1),
+            " (uncorrected is ", round(dailyMedian, 1), "), a change of ",
+            medianDiff, "%",
+            sep=""))
+```
+
+```
+## [1] "Median of corrected daily sum: 10766.2 (uncorrected is 10395), a change of 3.6%"
+```
+
+```r
 # Compare corrected and uncorrected histograms on one plot
 transRed <- rgb(1, 0, 0, 0.6)
 transBlue <- rgb(0, 0, 1, 0.6)
@@ -183,7 +220,7 @@ legend("topright", legend=c("Corrected","Uncorrected"),
 ![plot of chunk missingValues](figure/missingValues-2.png) 
 
 ```r
-# After imputation, do we still have a lot of days with 0.0 steps?
+# After imputation, do we still have days with 0.0 steps?
 newZeroDays <- sum(newDailySum$steps == 0)
 print(paste("After imputation, ", newZeroDays, " of ", totalDays, " days (", 
             round(100 * newZeroDays / totalDays, 1), "%) have no steps at all",
@@ -205,37 +242,11 @@ if (zeroDays > 0) {
 ## [1] "This is a reduction of 100%"
 ```
 
-```r
-# Print the corrected mean and median values (rounded to one decimal place).
-# Also compare to our original computations with missing values.
-meanDiff <- round((newDailyMean - dailyMean) / dailyMean * 100, 1)
-print(paste("Mean of corrected daily sum: ", round(newDailyMean, 1),
-            ", (Compare to ", round(dailyMean, 1), "), a change of ",
-            meanDiff, "%",
-            sep=""))
-```
-
-```
-## [1] "Mean of corrected daily sum: 10766.2, (Compare to 9354.2), a change of 15.1%"
-```
-
-```r
-medianDiff <- round((newDailyMedian - dailyMedian) / dailyMedian * 100, 1)
-print(paste("Median of corrected daily sum: ", round(newDailyMedian, 1),
-            ", (Compare to ", round(dailyMedian, 1), "), a change of ",
-            medianDiff, "%",
-            sep=""))
-```
-
-```
-## [1] "Median of corrected daily sum: 10766.2, (Compare to 10395), a change of 3.6%"
-```
-
 ## Are there differences in activity patterns between weekdays and weekends?
 
 Use the dataset with the filled-in missing values for this part.
 
-1. Create a new factor variable in the dataset with two levels.
+1. Create a new factor variable in the dataset with two levels (Weekend/Weekday).
 2. Make a panel plot containing a time series plot of the 5-minute interval
    (x-axis) and the average number of steps taken, averaged across all weekday
    days or weekend days (y-axis). See the
@@ -245,9 +256,10 @@ Use the dataset with the filled-in missing values for this part.
 
 ```r
 # Yes, this assumes that weekday names are returned in English...
-dayTypeColumn <- ifelse(weekdays(newActivity$date) %in% c("Saturday","Sunday"),
+dayTypeColumn <- ifelse(weekdays(newActivity$date) %in% c("Saturday", "Sunday"),
                         "Weekend", "Weekday")
-# Note that without the ungroup() this won't work.
+# Calculate averages across all weekend days and weekday days into a new data.frame.
+# Note that without ungroup() the mutate call to add the factor won't work.
 dayTypeIntervalMeans <- newActivity %>% ungroup() %>%
     mutate(dayType = as.factor(dayTypeColumn)) %>%
     group_by(interval, dayType) %>%
