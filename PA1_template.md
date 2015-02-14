@@ -1,15 +1,16 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
-
 # Reproducible Research: Peer Assessment 1
 
 <!-- 
-  Note:  For consistency, don't use RStudio's "Knit HTML" button.  Instead, in
-  the R Console, run the command:  knit2html("PA1_template.Rmd")
+  Notes:  
+  * For consistency, don't use RStudio's "Knit HTML" button.  Instead, in
+    the R Console, run the command:  knit2html("PA1_template.Rmd")
+  * We could set the global option to force echo for knitr, but doing so is the
+    default behavior so there is no need.
+  * Normally, much of the output would be in the markdown portion and not the
+    code chunk portion.  However, the grading rubric asks, "Does the report show
+    all of the R code needed to reproduce the results (numbers, plots, etc.) in
+    the report?"  To meet that part of the rubric, print() was used in a code
+    chunk to display the results requested.
   -->
 
 ## Loading and preprocessing the data
@@ -128,6 +129,13 @@ print(paste("5-minute interval with the maximum average number of steps: ",
 ## [1] "5-minute interval with the maximum average number of steps: 08:35 with 206.2 steps"
 ```
 
+_What is the average daily activity pattern?_
+
+The daily activity pattern is pretty variable.  The subjects clearly started to
+wake up around 5:30 AM, as that is when activity begins to increase from a
+baseline value very close to 0.  There is a clear spike of activity around
+lunch time.  Between 7 PM and midnight, activity gradually dropped toward 0.
+
 ## Imputing missing values
 
 There are a number of days/intervals where there are missing values. This may
@@ -139,10 +147,6 @@ introduce bias into some calculations or summaries of the data.
    missing data filled in.
 4. Make a histogram of the total number of steps taken each day.
 5. Calculate and report the mean and median total number of steps taken per day.
-
-Do these values differ from the estimates from the first part of the assignment?
-What is the impact of imputing missing data on the estimates of the total daily
-number of steps?
 
 
 ```r
@@ -162,8 +166,10 @@ print(paste("There are ", naValues, " missing values out of ", nrow(activity),
 ```r
 # Strategy: replace NA values with the mean of all non-NA values for the same
 # 5-minute time interval across all days. Note that the group_by(interval) 
-# causes the "mean" to calculate along that variable.
-# This dataset is the same as "activity" but with missing values filled in.
+# causes the "mean" to calculate along that variable.  While steps are measured
+# as integers, one will least disturb the distribution of values by using the
+# mean (even when it's not an integer) for imputed values.
+# This new dataset is the same as "activity" but with missing values filled in.
 newActivity <- activity %>% group_by(interval) %>%
   mutate(steps = ifelse(is.na(steps), mean(steps, na.rm=TRUE), steps))
 
@@ -242,6 +248,26 @@ if (zeroDays > 0) {
 ## [1] "This is a reduction of 100%"
 ```
 
+_Do these values differ from the estimates from the first part of the assignment?_
+_What is the impact of imputing missing data on the estimates of the total daily_
+_number of steps?_
+
+* The median and mean both changed ... to the same value!  Both increased from
+  their uncorrected values.  This shouldn't be surprising.  When calculating
+  **total** steps per day, missing values will cause these totals to be
+  artificially low.  Restoring approximate values for the missing values should
+  restore the mean and median (of total steps per day) to be much closer to 
+  their actual value.
+* Imputing missing values removed a large spike at 0 in the histogram.  All the
+  missing values were entire days.  So all of the days that were entirely
+  missing moved to the same spot in the histogram, as can be seen in the plot
+  showing both histograms on one plot.
+* Since missing values were imputed as the mean non-missing value across all
+  days for the same 5-minute time interval, and only whole days were missing,
+  the missing days all moved from 0 steps to the mean number of steps across
+  all days.  It is no surprise that the corrected median is the same value as
+  the mean!
+
 ## Are there differences in activity patterns between weekdays and weekends?
 
 Use the dataset with the filled-in missing values for this part.
@@ -279,6 +305,30 @@ print(p)
 ```
 
 ![plot of chunk weekendWeekdayDifferences](figure/weekendWeekdayDifferences-1.png) 
+
+_Are there differences in activity patterns between weekdays and weekends?_
+
+Yes!
+
+* **Weekday activity is clearly tied to employment.**  There is a spike of
+  activity in the morning that starts around 5:30 AM, most likely as the
+  subjects prepare for and arrive at work.  There is a period of lower activity
+  between about 9:30 AM and 5 PM with a burst of activity for lunch and a spike
+  before around 4 PM.  The spike around 4 PM may represent early risers leaving
+  work around 3:30 PM.  Between roughly 5 PM and 7 PM, there is more activity
+  than during the work day.  Finally, by about 8pm, activity is pretty close to
+  zero and remains that way for the rest of the evening.
+* **Weekend activity is more variable.** Activity increases more slowly in the
+  morning (and later in the morning) when compared to weekdays.  The subjects
+  were active later on weekend nights as well. There was no obvious pattern to
+  weekend activity.
+
+<!--
+I wanted to see if the individual days had much variation, and they did.  I'll
+leave this code in here because I found it interesting, but I'll entirely
+suppress it from the output because it is too far outside what was asked for.
+-->
+
 
 <!-- Clean temporary variables from the environment -->
 
